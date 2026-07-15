@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# Excel temporary files
+~$*.xlsm
+~$*.xlsx
