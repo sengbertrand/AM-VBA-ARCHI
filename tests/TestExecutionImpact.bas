@@ -73,12 +73,12 @@ Public Sub TestExecutionImpactInitialization()
     
     AssertStringEquals _
         expectedValue:=SIDE_BUY, _
-        actualValue:=execImpact.Side, _
+        actualValue:=execImpact.side, _
         assertionName:="Side must be normalized."
     
     AssertDoubleEquals _
         expectedValue:=99.5, _
-        actualValue:=execImpact.ExecutionPrice, _
+        actualValue:=execImpact.executionPrice, _
         assertionName:="ExecutionPrice must be preserved."
         
     '------------
@@ -87,12 +87,12 @@ Public Sub TestExecutionImpactInitialization()
     
     AssertDoubleEquals _
         expectedValue:=1000000#, _
-        actualValue:=execImpact.SecurityQuantityChange, _
+        actualValue:=execImpact.securityQuantityChange, _
         assertionName:="BUY security quantity change must be positive."
     
     AssertDoubleEquals _
         expectedValue:=-995000#, _
-        actualValue:=execImpact.CashBalanceChange, _
+        actualValue:=execImpact.cashBalanceChange, _
         assertionName:="BUY cash balance change must be negative."
         
     LogInfo "----- TEST EXECUTION IMPACT PASSED ------"
