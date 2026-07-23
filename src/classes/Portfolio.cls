@@ -138,15 +138,15 @@ End Sub
 '----------------------------------------------------------
 
 Public Function FindPosition( _
-    ByVal instrumentId As String) As Position
+    ByVal InstrumentId As String) As Position
 
     Dim pos As Position
 
-    instrumentId = Trim$(instrumentId)
+    InstrumentId = Trim$(InstrumentId)
 
     For Each pos In pPositions
 
-        If pos.instrumentId = instrumentId Then
+        If pos.InstrumentId = InstrumentId Then
             Set FindPosition = pos
             Exit Function
         End If
@@ -183,13 +183,13 @@ Public Sub AddCashPosition(ByVal cashPos As CashPosition)
     Dim existingCashPos As CashPosition
 
     Set existingCashPos = _
-        FindCashPosition(cashPos.CurrencyCode)
+        FindCashPosition(cashPos.currencyCode)
 
     If Not existingCashPos Is Nothing Then
         Err.Raise vbObjectError + 2005, _
             "Portfolio.AddCashPosition", _
             "A cash position already exists for currency " & _
-            cashPos.CurrencyCode & "."
+            cashPos.currencyCode & "."
     End If
 
     pCashPositions.Add cashPos
@@ -206,16 +206,16 @@ End Sub
 '----------------------------------------------------------
 
 Public Function FindCashPosition( _
-    ByVal CurrencyCode As String) As CashPosition
+    ByVal currencyCode As String) As CashPosition
 
     Dim cashPos As CashPosition
     Dim normalizedCurrencyCode As String
 
-    normalizedCurrencyCode = UCase$(Trim$(CurrencyCode))
+    normalizedCurrencyCode = UCase$(Trim$(currencyCode))
 
     For Each cashPos In pCashPositions
 
-        If cashPos.CurrencyCode = normalizedCurrencyCode Then
+        If cashPos.currencyCode = normalizedCurrencyCode Then
             Set FindCashPosition = cashPos
             Exit Function
         End If

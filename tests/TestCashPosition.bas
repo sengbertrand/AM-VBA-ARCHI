@@ -45,7 +45,7 @@ Public Sub TestCashPositionBehaviour()
 
     AssertStringEquals _
         expectedValue:="EUR", _
-        actualValue:=cashPos.CurrencyCode, _
+        actualValue:=cashPos.currencyCode, _
         assertionName:="CurrencyCode must be normalized."
 
     AssertDoubleEquals _

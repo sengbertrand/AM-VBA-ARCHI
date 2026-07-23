@@ -47,11 +47,11 @@ Public Property Let OrderId(ByVal value As String)
     pOrderId = value
 End Property
 
-Public Property Get ExecutedQuantity() As Double
-    ExecutedQuantity = pExecutedQuantity
+Public Property Get executedQuantity() As Double
+    executedQuantity = pExecutedQuantity
 End Property
 
-Public Property Let ExecutedQuantity(ByVal value As Double)
+Public Property Let executedQuantity(ByVal value As Double)
     pExecutedQuantity = value
 End Property
 

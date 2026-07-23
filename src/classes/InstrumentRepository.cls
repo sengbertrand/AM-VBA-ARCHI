@@ -34,16 +34,16 @@ Option Explicit
 ' "What do we know about this instrument?"
 '==========================================================
 
-Public Function GetCurrencyCode(ByVal instrumentId As String) As String
+Public Function GetCurrencyCode(ByVal InstrumentId As String) As String
 
-    Dim foundInstrument As Instrument
-    Set foundInstrument = GetInstrument(instrumentId)
+    Dim foundInstrument As instrument
+    Set foundInstrument = GetInstrument(InstrumentId)
 
-    GetCurrencyCode = foundInstrument.CurrencyCode
+    GetCurrencyCode = foundInstrument.currencyCode
 
 End Function
 
-Public Function GetInstrument(ByVal instrumentId As String) As Instrument
+Public Function GetInstrument(ByVal InstrumentId As String) As instrument
 
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Worksheets(SHEET_INSTRUMENTS)
@@ -52,24 +52,24 @@ Public Function GetInstrument(ByVal instrumentId As String) As Instrument
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).row
 
     Dim row As Long
-    Dim foundInstrument As Instrument
+    Dim foundInstrument As instrument
 
     For row = 2 To lastRow
 
-        If Trim(CStr(ws.Cells(row, 1).value)) = instrumentId Then
+        If Trim(CStr(ws.Cells(row, 1).value)) = InstrumentId Then
 
-            Set foundInstrument = New Instrument
+            Set foundInstrument = New instrument
 
-            foundInstrument.instrumentId = _
+            foundInstrument.InstrumentId = _
                 Trim(CStr(ws.Cells(row, 1).value))
 
             foundInstrument.InstrumentName = _
                 Trim(CStr(ws.Cells(row, 2).value))
 
-            foundInstrument.AssetClass = _
+            foundInstrument.assetClass = _
                 Trim(CStr(ws.Cells(row, 3).value))
 
-            foundInstrument.CurrencyCode = _
+            foundInstrument.currencyCode = _
                 Trim(CStr(ws.Cells(row, 4).value))
 
             Set GetInstrument = foundInstrument
@@ -81,7 +81,7 @@ Public Function GetInstrument(ByVal instrumentId As String) As Instrument
 
     Err.Raise vbObjectError + 5002, _
               "InstrumentRepository.GetInstrument", _
-              "Unknown instrument: " & instrumentId
+              "Unknown instrument: " & InstrumentId
 
 End Function
 

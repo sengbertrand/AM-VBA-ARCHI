@@ -27,6 +27,7 @@ Option Explicit
 ' At this stage, the suite contains only the first
 ' nominal business scenario.
 '----------------------------------------------------------
+
 Public Sub RunAllExecutionImpactCalculatorTests()
 
     LogInfo "--------------------------------------------"
@@ -52,7 +53,7 @@ End Sub
 ' +300,000
 '
 ' Expected cash impact:
-' -(300,000 ? 100 / 100)
+' -(300,000 * 100 / 100)
 ' = -300,000 EUR
 '
 ' This test crosses the complete public pipeline:
@@ -62,43 +63,49 @@ End Sub
 '   -> cash calculation
 '   -> ExecutionImpact construction
 '----------------------------------------------------------
+
 Private Sub TestCalculateBuyBond()
 
     On Error GoTo TestFailed
 
     Dim ord As Order
     Dim report As ExecutionReport
-    Dim instrument As instrument
+    Dim currentInstr As instrument
 
     Dim impactCalc As ExecutionImpactCalculator
-    Dim execImpact As ExecutionImpact
+    Set impactCalc = New ExecutionImpactCalculator
+    
 
     '------------------------------------------------------
     ' Arrange
     ' Create one completely valid business scenario.
     '------------------------------------------------------
+
     Set ord = CreateValidOrder()
     Set report = CreateValidExecutionReport()
-    Set instrument = CreateValidInstrument()
+    Set currentInstr = CreateValidInstrument()
 
-    Set impactCalc = New ExecutionImpactCalculator
+
 
     '------------------------------------------------------
     ' Act
     ' Execute the public contract of the business service.
     '------------------------------------------------------
+    
+    Dim execImpact As ExecutionImpact
     Set execImpact = impactCalc.Calculate( _
         ord:=ord, _
         report:=report, _
-        instrument:=instrument)
+        currentInstr:=currentInstr)
 
     '------------------------------------------------------
     ' Assert
     ' Verify traceability fields.
     '------------------------------------------------------
+
     AssertStringEquals _
         expectedValue:="ORD_002", _
-        actualValue:=execImpact.orderId, _
+        actualValue:=execImpact.OrderId, _
         assertionName:="BUY Bond - OrderId"
 
     AssertStringEquals _
@@ -113,33 +120,35 @@ Private Sub TestCalculateBuyBond()
 
     AssertStringEquals _
         expectedValue:="EUR", _
-        actualValue:=execImpact.CurrencyCode, _
+        actualValue:=execImpact.currencyCode, _
         assertionName:="BUY Bond - CurrencyCode"
 
     '------------------------------------------------------
     ' Verify execution context.
     '------------------------------------------------------
+
     AssertStringEquals _
         expectedValue:=SIDE_BUY, _
-        actualValue:=execImpact.side, _
+        actualValue:=execImpact.Side, _
         assertionName:="BUY Bond - Side"
 
     AssertDoubleEquals _
         expectedValue:=100#, _
-        actualValue:=execImpact.executionPrice, _
+        actualValue:=execImpact.ExecutionPrice, _
         assertionName:="BUY Bond - ExecutionPrice"
 
     '------------------------------------------------------
     ' Verify calculated economic movements.
     '------------------------------------------------------
+
     AssertDoubleEquals _
         expectedValue:=300000#, _
-        actualValue:=execImpact.securityQuantityChange, _
+        actualValue:=execImpact.SecurityQuantityChange, _
         assertionName:="BUY Bond - SecurityQuantityChange"
 
     AssertDoubleEquals _
         expectedValue:=-300000#, _
-        actualValue:=execImpact.cashBalanceChange, _
+        actualValue:=execImpact.CashBalanceChange, _
         assertionName:="BUY Bond - CashBalanceChange"
 
     LogInfo "PASS - TestCalculateBuyBond"
@@ -166,15 +175,16 @@ End Sub
 '----------------------------------------------------------
 ' Creates a valid BUY order for the EURO_BONDS portfolio.
 '----------------------------------------------------------
+
 Private Function CreateValidOrder() As Order
 
     Dim ord As Order
     Set ord = New Order
 
-    ord.orderId = "ORD_002"
+    ord.OrderId = "ORD_002"
     ord.PortfolioId = "EURO_BONDS"
     ord.InstrumentId = "OAT_FR_10Y"
-    ord.side = SIDE_BUY
+    ord.Side = SIDE_BUY
     ord.Quantity = 300000#
     ord.Status = ORDER_EXECUTED
 
@@ -185,14 +195,15 @@ End Function
 '----------------------------------------------------------
 ' Creates a valid execution report attached to ORD_002.
 '----------------------------------------------------------
+
 Private Function CreateValidExecutionReport() As ExecutionReport
 
     Dim report As ExecutionReport
     Set report = New ExecutionReport
 
-    report.orderId = "ORD_002"
+    report.OrderId = "ORD_002"
     report.executedQuantity = 300000#
-    report.executionPrice = 100#
+    report.ExecutionPrice = 100#
 
     Set CreateValidExecutionReport = report
 
@@ -201,16 +212,17 @@ End Function
 '----------------------------------------------------------
 ' Creates valid reference data for the executed bond.
 '----------------------------------------------------------
+
 Private Function CreateValidInstrument() As instrument
 
-    Dim instrument As instrument
-    Set instrument = New instrument
+    Dim currentInstr As instrument
+    Set currentInstr = New instrument
 
-    instrument.InstrumentId = "OAT_FR_10Y"
-    instrument.assetClass = ASSET_CLASS_BOND
-    instrument.CurrencyCode = "EUR"
+    currentInstr.InstrumentId = "OAT_FR_10Y"
+    currentInstr.assetClass = ASSET_CLASS_BOND
+    currentInstr.currencyCode = "EUR"
 
-    Set CreateValidInstrument = instrument
+    Set CreateValidInstrument = currentInstr
 
 End Function
 
@@ -221,6 +233,7 @@ End Function
 '----------------------------------------------------------
 ' Verifies that two String values are equal.
 '----------------------------------------------------------
+
 Private Sub AssertStringEquals( _
     ByVal expectedValue As String, _
     ByVal actualValue As String, _
@@ -245,6 +258,7 @@ End Sub
 ' The tolerance protects the test against insignificant
 ' floating-point representation differences.
 '----------------------------------------------------------
+
 Private Sub AssertDoubleEquals( _
     ByVal expectedValue As Double, _
     ByVal actualValue As Double, _

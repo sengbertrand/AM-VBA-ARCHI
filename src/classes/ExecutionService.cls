@@ -35,28 +35,28 @@ Public Function ExecuteOrder(ByRef ord As Order) As ExecutionReport
     ord.Status = ORDER_SENT
     LogInfo "Order sent to execution venue : " & ord.OrderId
 
-    Dim Report As ExecutionReport
-    Set Report = New ExecutionReport
+    Dim report As ExecutionReport
+    Set report = New ExecutionReport
     
     'Simulated broker execution report.
-    Report.OrderId = ord.OrderId
-    Report.ExecutedQuantity = ord.Quantity
-    Report.ExecutionPrice = 100
-    Report.ExecutionTime = Now
-    Report.Status = ORDER_EXECUTED
+    report.OrderId = ord.OrderId
+    report.executedQuantity = ord.Quantity
+    report.ExecutionPrice = 100
+    report.ExecutionTime = Now
+    report.Status = ORDER_EXECUTED
     
-    LogInfo "Execution report received : " & Report.OrderId & _
-        " | Status = " & Report.Status & _
-        " | Executed Qty = " & Report.ExecutedQuantity & _
-        " | Price = " & Report.ExecutionPrice
+    LogInfo "Execution report received : " & report.OrderId & _
+        " | Status = " & report.Status & _
+        " | Executed Qty = " & report.executedQuantity & _
+        " | Price = " & report.ExecutionPrice
     
     ' Update the OMS order status using the broker execution report.
     
-    ord.Status = Report.Status
+    ord.Status = report.Status
     LogInfo "Order status updated in OMS : " & ord.OrderId & _
         " | Status = " & ord.Status
 
-    Set ExecuteOrder = Report
+    Set ExecuteOrder = report
 
 End Function
 

@@ -120,9 +120,9 @@ End Property
 ' Currency code
 '----------------------------------------------------------
 
-Public Property Get CurrencyCode() As String
+Public Property Get currencyCode() As String
     EnsureInitialized
-    CurrencyCode = pCurrencyCode
+    currencyCode = pCurrencyCode
 End Property
 
 '----------------------------------------------------------

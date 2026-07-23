@@ -2,242 +2,387 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "ExecutionImpact"
+Attribute VB_Name = "ExecutionImpactCalculator"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
-'----------------------------------------------------------
-' Private fields
-'----------------------------------------------------------
-
-Private pOrderId As String
-Private pPortfolioId As String
-Private pInstrumentId As String
-Private pCurrencyCode As String
-
-Private pSide As String
-Private pExecutionPrice As Double
-
-Private pSecurityQuantityChange As Double
-Private pCashBalanceChange As Double
-
-Private pIsInitialized As Boolean
-
-'----------------------------------------------------------
-' Initialize the execution impact
+'==========================================================
+' Business Service : ExecutionImpactCalculator
 '
-' Creates the first and only valid state of the object.
-' After initialization, the object becomes immutable.
+' Classification:
+' Business Service
+'
+' Domain:
+' Investment / Execution / Portfolio
+'
+' Responsibility:
+' Calculates the economic impacts of an executed order
+' before they are applied to the target portfolio.
+'
+' Inputs:
+' Order
+' ExecutionReport
+' Instrument
+'
+' Produces:
+' ExecutionImpact
+'
+' Mental Model:
+' "What economic changes should this execution
+' produce in the portfolio?"
+'==========================================================
+
+'----------------------------------------------------------
+' Calculates the complete execution impact.
+'
+' Workflow:
+' 1. Validate required inputs.
+' 2. Validate document consistency.
+' 3. Validate the data required for calculation.
+' 4. Calculate the security quantity change.
+' 5. Calculate the absolute cash amount.
+' 6. Apply the economic direction to cash.
+' 7. Build the immutable ExecutionImpact.
 '----------------------------------------------------------
 
-Public Sub Initialize( _
-    ByVal orderIdValue As String, _
-    ByVal portfolioIdValue As String, _
-    ByVal instrumentIdValue As String, _
-    ByVal currencyCodeValue As String, _
-    ByVal sideValue As String, _
-    ByVal executionPriceValue As Double, _
-    ByVal securityQuantityChangeValue As Double, _
-    ByVal cashBalanceChangeValue As Double)
+Public Function Calculate( _
+    ByVal ord As Order, _
+    ByVal report As ExecutionReport, _
+    ByVal currentInstr As instrument) As ExecutionImpact
 
+    Dim SecurityQuantityChange As Double
+    Dim absoluteCashAmount As Double
+    Dim CashBalanceChange As Double
 
     '------------------------------------------------------
-    ' Lifecycle control
+    ' 1. Validate the supplied business documents
     '------------------------------------------------------
 
-    If pIsInitialized Then
-        Err.Raise vbObjectError + 8001, _
-            "ExecutionImpact.Initialize", _
-            "ExecutionImpact has already been initialized."
+    ValidateInputs _
+        ord:=ord, _
+        report:=report, _
+        currentInstr:=currentInstr
+
+    '------------------------------------------------------
+    ' 2. Validate that the documents describe
+    '    the same business operation
+    '------------------------------------------------------
+
+    ValidateConsistency _
+        ord:=ord, _
+        report:=report, _
+        currentInstr:=currentInstr
+
+    '------------------------------------------------------
+    ' 3. Validate that the data can be calculated
+    '------------------------------------------------------
+
+    ValidateCalculationData _
+        ord:=ord, _
+        report:=report, _
+        currentInstr:=currentInstr
+
+    '------------------------------------------------------
+    ' 4. Calculate the signed security movement
+    '------------------------------------------------------
+
+    SecurityQuantityChange = _
+        CalculateSecurityQuantityChange( _
+            executedQuantity:=report.executedQuantity, _
+            Side:=ord.Side)
+
+    '------------------------------------------------------
+    ' 5. Calculate the absolute economic cash amount
+    '------------------------------------------------------
+
+    absoluteCashAmount = _
+        CalculateAbsoluteCashAmount( _
+            executedQuantity:=report.executedQuantity, _
+            ExecutionPrice:=report.ExecutionPrice, _
+            assetClass:=currentInstr.assetClass)
+
+    '------------------------------------------------------
+    ' 6. Apply the economic direction to cash
+    '------------------------------------------------------
+
+    CashBalanceChange = _
+        CalculateCashBalanceChange( _
+            absoluteCashAmount:=absoluteCashAmount, _
+            Side:=ord.Side)
+
+    '------------------------------------------------------
+    ' 7. Build and return the immutable result
+    '------------------------------------------------------
+
+    Set Calculate = _
+        CreateExecutionImpact( _
+            ord:=ord, _
+            report:=report, _
+            currentInstr:=currentInstr, _
+            SecurityQuantityChange:=SecurityQuantityChange, _
+            CashBalanceChange:=CashBalanceChange)
+
+End Function
+
+'----------------------------------------------------------
+' Validates that all required business documents exist.
+'----------------------------------------------------------
+
+Private Sub ValidateInputs( _
+    ByVal ord As Order, _
+    ByVal report As ExecutionReport, _
+    ByVal currentInstr As instrument)
+
+    If ord Is Nothing Then
+        Err.Raise vbObjectError + 8201, _
+            "ExecutionImpactCalculator.ValidateInputs", _
+            "Order cannot be Nothing."
+    End If
+
+    If report Is Nothing Then
+        Err.Raise vbObjectError + 8202, _
+            "ExecutionImpactCalculator.ValidateInputs", _
+            "ExecutionReport cannot be Nothing."
+    End If
+
+    If currentInstr Is Nothing Then
+        Err.Raise vbObjectError + 8203, _
+            "ExecutionImpactCalculator.ValidateInputs", _
+            "Instrument cannot be Nothing."
+    End If
+
+End Sub
+
+'----------------------------------------------------------
+' Validates that all supplied documents describe
+' the same business operation.
+'----------------------------------------------------------
+
+Private Sub ValidateConsistency( _
+    ByVal ord As Order, _
+    ByVal report As ExecutionReport, _
+    ByVal currentInstr As instrument)
+
+    '------------------------------------------------------
+    ' The execution report must belong to the supplied order
+    '------------------------------------------------------
+
+    If report.OrderId <> ord.OrderId Then
+        Err.Raise vbObjectError + 8204, _
+            "ExecutionImpactCalculator.ValidateConsistency", _
+            "ExecutionReport does not belong to the supplied Order." & _
+            " Expected OrderId: " & ord.OrderId & _
+            " | Actual OrderId: " & report.OrderId
     End If
 
     '------------------------------------------------------
-    ' Normalize textual inputs
+    ' The reference-data instrument must match
+    ' the instrument requested by the order
     '------------------------------------------------------
 
-    orderIdValue = Trim$(orderIdValue)
-    portfolioIdValue = Trim$(portfolioIdValue)
-    instrumentIdValue = Trim$(instrumentIdValue)
-    currencyCodeValue = UCase$(Trim$(currencyCodeValue))
-    sideValue = UCase$(Trim$(sideValue))
+    If currentInstr.InstrumentId <> ord.InstrumentId Then
+        Err.Raise vbObjectError + 8205, _
+            "ExecutionImpactCalculator.ValidateConsistency", _
+            "Instrument does not match the Order instrument." & _
+            " Expected InstrumentId: " & ord.InstrumentId & _
+            " | Actual InstrumentId: " & currentInstr.InstrumentId
+    End If
+
+End Sub
+
+'----------------------------------------------------------
+' Validates that the supplied business data can be used
+' to calculate one execution impact.
+'----------------------------------------------------------
+
+Private Sub ValidateCalculationData( _
+    ByVal ord As Order, _
+    ByVal report As ExecutionReport, _
+    ByVal currentInstr As instrument)
 
     '------------------------------------------------------
-    ' Target and traceability invariants
+    ' Validate the order side
     '------------------------------------------------------
 
-    If Len(orderIdValue) = 0 Then
-        Err.Raise vbObjectError + 8002, _
-            "ExecutionImpact.Initialize", _
-            "OrderId cannot be empty."
-    End If
-
-    If Len(portfolioIdValue) = 0 Then
-        Err.Raise vbObjectError + 8003, _
-            "ExecutionImpact.Initialize", _
-            "PortfolioId cannot be empty."
-    End If
-
-    If Len(instrumentIdValue) = 0 Then
-        Err.Raise vbObjectError + 8004, _
-            "ExecutionImpact.Initialize", _
-            "InstrumentId cannot be empty."
-    End If
-
-    If Len(currencyCodeValue) = 0 Then
-        Err.Raise vbObjectError + 8005, _
-            "ExecutionImpact.Initialize", _
-            "CurrencyCode cannot be empty."
+    If ord.Side <> SIDE_BUY And ord.Side <> SIDE_SELL Then
+        Err.Raise vbObjectError + 8206, _
+            "ExecutionImpactCalculator.ValidateCalculationData", _
+            "Unsupported order side: " & ord.Side
     End If
 
     '------------------------------------------------------
-    ' Execution-context invariants
+    ' Validate the executed quantity
     '------------------------------------------------------
 
-    If sideValue <> SIDE_BUY And sideValue <> SIDE_SELL Then
-        Err.Raise vbObjectError + 8006, _
-            "ExecutionImpact.Initialize", _
-            "Unsupported side: " & sideValue
+    If report.executedQuantity <= 0 Then
+        Err.Raise vbObjectError + 8207, _
+            "ExecutionImpactCalculator.ValidateCalculationData", _
+            "ExecutedQuantity must be strictly positive."
     End If
 
-    If executionPriceValue <= 0 Then
-        Err.Raise vbObjectError + 8007, _
-            "ExecutionImpact.Initialize", _
+    '------------------------------------------------------
+    ' Validate the execution price
+    '------------------------------------------------------
+
+    If report.ExecutionPrice <= 0 Then
+        Err.Raise vbObjectError + 8208, _
+            "ExecutionImpactCalculator.ValidateCalculationData", _
             "ExecutionPrice must be strictly positive."
     End If
 
     '------------------------------------------------------
-    ' Calculated-impact invariants
+    ' Validate the instrument asset class
     '------------------------------------------------------
 
-    If securityQuantityChangeValue = 0 Then
-        Err.Raise vbObjectError + 8008, _
-            "ExecutionImpact.Initialize", _
-            "SecurityQuantityChange cannot be zero."
-    End If
+    If currentInstr.assetClass <> ASSET_CLASS_BOND And _
+       currentInstr.assetClass <> ASSET_CLASS_EQUITY Then
 
-    If cashBalanceChangeValue = 0 Then
-        Err.Raise vbObjectError + 8009, _
-            "ExecutionImpact.Initialize", _
-            "CashBalanceChange cannot be zero."
-    End If
-
-    If sideValue = SIDE_BUY Then
-
-        If securityQuantityChangeValue < 0 Then
-            Err.Raise vbObjectError + 8010, _
-                "ExecutionImpact.Initialize", _
-                "BUY must produce a positive security quantity change."
-        End If
-
-        If cashBalanceChangeValue > 0 Then
-            Err.Raise vbObjectError + 8011, _
-                "ExecutionImpact.Initialize", _
-                "BUY must produce a negative cash balance change."
-        End If
-
-    ElseIf sideValue = SIDE_SELL Then
-
-        If securityQuantityChangeValue > 0 Then
-            Err.Raise vbObjectError + 8012, _
-                "ExecutionImpact.Initialize", _
-                "SELL must produce a negative security quantity change."
-        End If
-
-        If cashBalanceChangeValue < 0 Then
-            Err.Raise vbObjectError + 8013, _
-                "ExecutionImpact.Initialize", _
-                "SELL must produce a positive cash balance change."
-        End If
+        Err.Raise vbObjectError + 8209, _
+            "ExecutionImpactCalculator.ValidateCalculationData", _
+            "Unsupported asset class: " & currentInstr.assetClass
 
     End If
 
     '------------------------------------------------------
-    ' Store the validated immutable state
+    ' Validate the settlement currency
     '------------------------------------------------------
 
-    pOrderId = orderIdValue
-
-    pPortfolioId = portfolioIdValue
-    pInstrumentId = instrumentIdValue
-    pCurrencyCode = currencyCodeValue
-
-    pSide = sideValue
-    pExecutionPrice = executionPriceValue
-
-    pSecurityQuantityChange = securityQuantityChangeValue
-    pCashBalanceChange = cashBalanceChangeValue
-
-    pIsInitialized = True
-
-End Sub
-
-Private Sub EnsureInitialized()
-    
-    If Not pIsInitialized Then
-        
-        Err.Raise vbObjectError + 8014, _
-            "ExecutionImpact.EnsureInitialized", _
-            "ExecutionImpact has not been initialized."
-    
+    If Len(Trim$(currentInstr.currencyCode)) = 0 Then
+        Err.Raise vbObjectError + 8210, _
+            "ExecutionImpactCalculator.ValidateCalculationData", _
+            "Instrument CurrencyCode cannot be empty."
     End If
 
 End Sub
 
 '----------------------------------------------------------
-' Traceability
+' Calculates the signed security quantity change.
+'
+' BUY  -> positive quantity change
+' SELL -> negative quantity change
 '----------------------------------------------------------
 
-Public Property Get orderId() As String
-    EnsureInitialized
-    orderId = pOrderId
-End Property
+Private Function CalculateSecurityQuantityChange( _
+    ByVal executedQuantity As Double, _
+    ByVal Side As String) As Double
+
+    If Side = SIDE_BUY Then
+
+        CalculateSecurityQuantityChange = executedQuantity
+
+    ElseIf Side = SIDE_SELL Then
+
+        CalculateSecurityQuantityChange = -executedQuantity
+
+    Else
+
+        Err.Raise vbObjectError + 8211, _
+            "ExecutionImpactCalculator.CalculateSecurityQuantityChange", _
+            "Unsupported order side: " & Side
+
+    End If
+
+End Function
 
 '----------------------------------------------------------
-' Targets
+' Calculates the absolute cash amount according to
+' the instrument asset-class pricing convention.
+'
+' BOND:
+' Quantity * Price / 100
+'
+' EQUITY:
+' Quantity * Price
 '----------------------------------------------------------
 
-Public Property Get PortfolioId() As String
-    EnsureInitialized
-    PortfolioId = pPortfolioId
-End Property
+Private Function CalculateAbsoluteCashAmount( _
+    ByVal executedQuantity As Double, _
+    ByVal ExecutionPrice As Double, _
+    ByVal assetClass As String) As Double
 
-Public Property Get InstrumentId() As String
-    EnsureInitialized
-    InstrumentId = pInstrumentId
-End Property
+    If assetClass = ASSET_CLASS_BOND Then
 
-Public Property Get CurrencyCode() As String
-    EnsureInitialized
-    CurrencyCode = pCurrencyCode
-End Property
+        CalculateAbsoluteCashAmount = _
+            executedQuantity * ExecutionPrice / 100#
 
-'----------------------------------------------------------
-' Execution context
-'----------------------------------------------------------
+    ElseIf assetClass = ASSET_CLASS_EQUITY Then
 
-Public Property Get side() As String
-    EnsureInitialized
-    side = pSide
-End Property
+        CalculateAbsoluteCashAmount = _
+            executedQuantity * ExecutionPrice
 
-Public Property Get executionPrice() As Double
-    EnsureInitialized
-    executionPrice = pExecutionPrice
-End Property
+    Else
+
+        Err.Raise vbObjectError + 8212, _
+            "ExecutionImpactCalculator.CalculateAbsoluteCashAmount", _
+            "Unsupported asset class: " & assetClass
+
+    End If
+
+End Function
 
 '----------------------------------------------------------
-' Calculated impacts
+' Calculates the signed cash balance change.
+'
+' BUY  -> negative cash movement
+' SELL -> positive cash movement
 '----------------------------------------------------------
 
-Public Property Get securityQuantityChange() As Double
-    EnsureInitialized
-    securityQuantityChange = pSecurityQuantityChange
-End Property
+Private Function CalculateCashBalanceChange( _
+    ByVal absoluteCashAmount As Double, _
+    ByVal Side As String) As Double
 
-Public Property Get cashBalanceChange() As Double
-    EnsureInitialized
-    cashBalanceChange = pCashBalanceChange
-End Property
+    If absoluteCashAmount <= 0 Then
+        Err.Raise vbObjectError + 8213, _
+            "ExecutionImpactCalculator.CalculateCashBalanceChange", _
+            "AbsoluteCashAmount must be strictly positive."
+    End If
+
+    If Side = SIDE_BUY Then
+
+        CalculateCashBalanceChange = -absoluteCashAmount
+
+    ElseIf Side = SIDE_SELL Then
+
+        CalculateCashBalanceChange = absoluteCashAmount
+
+    Else
+
+        Err.Raise vbObjectError + 8214, _
+            "ExecutionImpactCalculator.CalculateCashBalanceChange", _
+            "Unsupported order side: " & Side
+
+    End If
+
+End Function
+
+'----------------------------------------------------------
+' Creates one immutable ExecutionImpact business object.
+'----------------------------------------------------------
+
+Private Function CreateExecutionImpact( _
+    ByVal ord As Order, _
+    ByVal report As ExecutionReport, _
+    ByVal currentInstr As instrument, _
+    ByVal SecurityQuantityChange As Double, _
+    ByVal CashBalanceChange As Double) As ExecutionImpact
+
+    Dim execImpact As ExecutionImpact
+    Set execImpact = New ExecutionImpact
+
+    execImpact.Initialize _
+        orderIdValue:=ord.OrderId, _
+        portfolioIdValue:=ord.PortfolioId, _
+        instrumentIdValue:=ord.InstrumentId, _
+        currencyCodeValue:=currentInstr.currencyCode, _
+        sideValue:=ord.Side, _
+        executionPriceValue:=report.ExecutionPrice, _
+        securityQuantityChangeValue:=SecurityQuantityChange, _
+        cashBalanceChangeValue:=CashBalanceChange
+
+    Set CreateExecutionImpact = execImpact
+
+End Function
+

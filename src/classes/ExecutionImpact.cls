@@ -9,11 +9,39 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
+'==========================================================
+' Business Object : ExecutionImpact
+'
+' Classification:
+' Business Object / Immutable Result
+'
+' Domain:
+' Investment / Execution / Portfolio
+'
+' Responsibility:
+' Represents the validated economic consequences of one
+' executed order before they are applied to a portfolio.
+'
+' Produced by:
+' ExecutionImpactCalculator
+'
+' Consumed by:
+' PortfolioUpdateService
+'
+' Lifecycle:
+' Initialized once, then immutable.
+'
+' Mental Model:
+' "What economic changes must be applied to the portfolio
+' because of this execution?"
+'==========================================================
+
 '----------------------------------------------------------
 ' Private fields
 '----------------------------------------------------------
 
 Private pOrderId As String
+
 Private pPortfolioId As String
 Private pInstrumentId As String
 Private pCurrencyCode As String
@@ -27,7 +55,7 @@ Private pCashBalanceChange As Double
 Private pIsInitialized As Boolean
 
 '----------------------------------------------------------
-' Initialize the execution impact
+' Initializes the execution impact.
 '
 ' Creates the first and only valid state of the object.
 ' After initialization, the object becomes immutable.
@@ -42,7 +70,6 @@ Public Sub Initialize( _
     ByVal executionPriceValue As Double, _
     ByVal securityQuantityChangeValue As Double, _
     ByVal cashBalanceChangeValue As Double)
-
 
     '------------------------------------------------------
     ' Lifecycle control
@@ -124,6 +151,10 @@ Public Sub Initialize( _
             "CashBalanceChange cannot be zero."
     End If
 
+    '------------------------------------------------------
+    ' Directional consistency for a BUY
+    '------------------------------------------------------
+
     If sideValue = SIDE_BUY Then
 
         If securityQuantityChangeValue < 0 Then
@@ -137,6 +168,10 @@ Public Sub Initialize( _
                 "ExecutionImpact.Initialize", _
                 "BUY must produce a negative cash balance change."
         End If
+
+    '------------------------------------------------------
+    ' Directional consistency for a SELL
+    '------------------------------------------------------
 
     ElseIf sideValue = SIDE_SELL Then
 
@@ -174,14 +209,17 @@ Public Sub Initialize( _
 
 End Sub
 
+'----------------------------------------------------------
+' Ensures that the object has reached its valid state
+' before any property is read.
+'----------------------------------------------------------
+
 Private Sub EnsureInitialized()
-    
+
     If Not pIsInitialized Then
-        
         Err.Raise vbObjectError + 8014, _
             "ExecutionImpact.EnsureInitialized", _
             "ExecutionImpact has not been initialized."
-    
     End If
 
 End Sub
@@ -190,9 +228,11 @@ End Sub
 ' Traceability
 '----------------------------------------------------------
 
-Public Property Get orderId() As String
+Public Property Get OrderId() As String
+
     EnsureInitialized
-    orderId = pOrderId
+    OrderId = pOrderId
+
 End Property
 
 '----------------------------------------------------------
@@ -200,18 +240,24 @@ End Property
 '----------------------------------------------------------
 
 Public Property Get PortfolioId() As String
+
     EnsureInitialized
     PortfolioId = pPortfolioId
+
 End Property
 
 Public Property Get InstrumentId() As String
+
     EnsureInitialized
     InstrumentId = pInstrumentId
+
 End Property
 
-Public Property Get CurrencyCode() As String
+Public Property Get currencyCode() As String
+
     EnsureInitialized
-    CurrencyCode = pCurrencyCode
+    currencyCode = pCurrencyCode
+
 End Property
 
 '----------------------------------------------------------
@@ -219,13 +265,17 @@ End Property
 '----------------------------------------------------------
 
 Public Property Get Side() As String
+
     EnsureInitialized
     Side = pSide
+
 End Property
 
 Public Property Get ExecutionPrice() As Double
+
     EnsureInitialized
     ExecutionPrice = pExecutionPrice
+
 End Property
 
 '----------------------------------------------------------
@@ -233,11 +283,16 @@ End Property
 '----------------------------------------------------------
 
 Public Property Get SecurityQuantityChange() As Double
+
     EnsureInitialized
     SecurityQuantityChange = pSecurityQuantityChange
+
 End Property
 
 Public Property Get CashBalanceChange() As Double
+
     EnsureInitialized
     CashBalanceChange = pCashBalanceChange
+
 End Property
+

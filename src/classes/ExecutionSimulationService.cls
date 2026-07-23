@@ -59,7 +59,7 @@ Public Function SimulateExecution( _
 
     Dim simulatedPrice As Double
     simulatedPrice = _
-        marketDataRepo.GetMarketPrice(ord.instrumentId)
+        marketDataRepo.GetMarketPrice(ord.InstrumentId)
 
     '------------------------------------------------------
     ' Build simulated execution report
@@ -75,7 +75,7 @@ Public Function SimulateExecution( _
     Set simulatedReport = New ExecutionReport
 
     simulatedReport.OrderId = ord.OrderId
-    simulatedReport.ExecutedQuantity = ord.Quantity
+    simulatedReport.executedQuantity = ord.Quantity
     simulatedReport.ExecutionPrice = simulatedPrice
     simulatedReport.ExecutionTime = Now
     simulatedReport.Status = ORDER_EXECUTED

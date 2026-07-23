@@ -51,11 +51,11 @@ Private pCurrencyCode As String
 ' Instrument identifier
 '----------------------------------------------------------
 
-Public Property Get instrumentId() As String
-    instrumentId = pInstrumentId
+Public Property Get InstrumentId() As String
+    InstrumentId = pInstrumentId
 End Property
 
-Public Property Let instrumentId(ByVal value As String)
+Public Property Let InstrumentId(ByVal value As String)
     pInstrumentId = value
 End Property
 
@@ -75,11 +75,11 @@ End Property
 ' Asset class
 '----------------------------------------------------------
 
-Public Property Get AssetClass() As String
-    AssetClass = pAssetClass
+Public Property Get assetClass() As String
+    assetClass = pAssetClass
 End Property
 
-Public Property Let AssetClass(ByVal value As String)
+Public Property Let assetClass(ByVal value As String)
     pAssetClass = value
 End Property
 
@@ -87,10 +87,10 @@ End Property
 ' ISO currency code
 '----------------------------------------------------------
 
-Public Property Get CurrencyCode() As String
-    CurrencyCode = pCurrencyCode
+Public Property Get currencyCode() As String
+    currencyCode = pCurrencyCode
 End Property
 
-Public Property Let CurrencyCode(ByVal value As String)
+Public Property Let currencyCode(ByVal value As String)
     pCurrencyCode = value
 End Property
