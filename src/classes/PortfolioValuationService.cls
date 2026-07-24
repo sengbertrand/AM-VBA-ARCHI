@@ -65,27 +65,44 @@ Public Function CalculatePortfolioMarketValue( _
     '------------------------------------------------------
     ' Aggregate the value of all portfolio positions
     '------------------------------------------------------
-    Dim totalMarketValue As Double
-    totalMarketValue = 0
-
+    Dim securityMarketValue As Double
+    securityMarketValue = 0
+    
     Dim pos As Position
-    Dim foundInstrument As Instrument
+    Dim foundInstrument As instrument
     Dim positionMarketValue As Double
-
+    
     For Each pos In ptf.Positions
-
+    
         Set foundInstrument = _
-            instrumentRepo.GetInstrument(pos.instrumentId)
-
+            instrumentRepo.GetInstrument(pos.InstrumentId)
+    
         positionMarketValue = _
             valEngine.CalculateMarketValue(pos, foundInstrument)
-
-        totalMarketValue = _
-            totalMarketValue + positionMarketValue
-
+    
+        securityMarketValue = _
+            securityMarketValue + positionMarketValue
+    
     Next pos
-
-    CalculatePortfolioMarketValue = totalMarketValue
+    
+    '------------------------------------------------------
+    ' Aggregate the portfolio cash value
+    '------------------------------------------------------
+    Dim cashMarketValue As Double
+    cashMarketValue = 0
+    
+    Dim cashPos As CashPosition
+    
+    For Each cashPos In ptf.CashPositions
+        cashMarketValue = _
+            cashMarketValue + cashPos.Balance
+    Next cashPos
+    
+    '------------------------------------------------------
+    ' Calculate total portfolio market value
+    '------------------------------------------------------
+    CalculatePortfolioMarketValue = _
+        securityMarketValue + cashMarketValue
 
 End Function
 
