@@ -61,24 +61,43 @@ Public Function CreateSnapshot(ByRef sourcePtf As Portfolio) _
     simulatedPtf.PortfolioId = sourcePtf.PortfolioId
 
     '------------------------------------------------------
-    ' Deep-copy every position
-    '------------------------------------------------------
-    Dim sourcePos As Position
-    Dim copiedPos As Position
+' Deep-copy every security position
+'------------------------------------------------------
+Dim sourcePos As Position
+Dim copiedPos As Position
 
-    For Each sourcePos In sourcePtf.Positions
+For Each sourcePos In sourcePtf.Positions
 
-        Set copiedPos = New Position
+    Set copiedPos = New Position
 
-        copiedPos.PortfolioId = sourcePos.PortfolioId
-        copiedPos.instrumentId = sourcePos.instrumentId
-        copiedPos.Quantity = sourcePos.Quantity
-        copiedPos.MarketPrice = sourcePos.MarketPrice
-        copiedPos.CurrencyCode = sourcePos.CurrencyCode
+    copiedPos.PortfolioId = sourcePos.PortfolioId
+    copiedPos.InstrumentId = sourcePos.InstrumentId
+    copiedPos.Quantity = sourcePos.Quantity
+    copiedPos.MarketPrice = sourcePos.MarketPrice
+    copiedPos.currencyCode = sourcePos.currencyCode
 
-        simulatedPtf.AddPosition copiedPos
+    simulatedPtf.AddPosition copiedPos
 
-    Next sourcePos
+Next sourcePos
+
+'------------------------------------------------------
+' Deep-copy every cash position
+'------------------------------------------------------
+Dim sourceCashPos As CashPosition
+Dim copiedCashPos As CashPosition
+
+For Each sourceCashPos In sourcePtf.CashPositions
+
+    Set copiedCashPos = New CashPosition
+
+    copiedCashPos.Initialize _
+        portfolioIdValue:=sourceCashPos.PortfolioId, _
+        currencyCodeValue:=sourceCashPos.currencyCode, _
+        initialBalance:=sourceCashPos.Balance
+
+    simulatedPtf.AddCashPosition copiedCashPos
+
+Next sourceCashPos
 
     '------------------------------------------------------
     ' Create the snapshot wrapper

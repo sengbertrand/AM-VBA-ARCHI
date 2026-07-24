@@ -29,6 +29,38 @@ Public Sub LogError(ByVal message As String)
     WriteLog LOG_ERROR, message
 End Sub
 
+
+Private Sub WriteLog1( _
+    ByVal level As String, _
+    ByVal message As String)
+
+    Debug.Print "WriteLog - Start"
+
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Worksheets(SHEET_LOGS)
+
+    Debug.Print "WriteLog - Worksheet found"
+
+    Dim lastUsedRow As Long
+    lastUsedRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).row
+
+    Debug.Print "WriteLog - Last row = " & lastUsedRow
+
+    Dim nextRow As Long
+    nextRow = lastUsedRow + 1
+
+    Debug.Print "WriteLog - Next row = " & nextRow
+
+    ws.Cells(nextRow, 1).value = Now
+    Debug.Print "WriteLog - Date written"
+
+    ws.Cells(nextRow, 2).value = level
+    Debug.Print "WriteLog - Level written"
+
+    ws.Cells(nextRow, 3).value = message
+    Debug.Print "WriteLog - Message written"
+
+End Sub
 Private Sub WriteLog(ByVal level As String, ByVal message As String)
     
     Dim ws As Worksheet

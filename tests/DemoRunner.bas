@@ -43,9 +43,25 @@ Public Sub RunDemo()
 
     LogInfo "Initial portfolio created : " & ptf.PortfolioId
     LogInfo "Initial position count    : " & ptf.PositionCount
+    
+    '------------------------------------------------------
+    ' 4. Create the initial EUR cash position
+    '------------------------------------------------------
+    Dim cashFactory As CashPositionFactory
+    Set cashFactory = New CashPositionFactory
+    
+    Dim eurCash As CashPosition
+    Set eurCash = cashFactory.Create( _
+                        ptf:=ptf, _
+                        currencyCode:="EUR", _
+                        initialBalance:=1000000#)
+    
+    ptf.AddCashPosition eurCash
+    
+    LogInfo "Initial EUR cash balance : " & eurCash.Balance
 
     '------------------------------------------------------
-    ' 4. Create an investment decision
+    ' 5. Create an investment decision
     '------------------------------------------------------
     Dim investDec As InvestmentDecision
     Set investDec = New InvestmentDecision
@@ -61,7 +77,7 @@ Public Sub RunDemo()
     LogInfo "Investment decision created : " & investDec.DecisionId
 
     '------------------------------------------------------
-    ' 5. Generate the market order
+    ' 6. Generate the market order
     '------------------------------------------------------
     Dim orderSvc As OrderGenerationService
     Set orderSvc = New OrderGenerationService
@@ -75,7 +91,7 @@ Public Sub RunDemo()
             " | Quantity = " & ord.Quantity
 
     '------------------------------------------------------
-    ' 6. Perform the pre-trade risk assessment
+    ' 7. Perform the pre-trade risk assessment
     '------------------------------------------------------
     Dim preTradeRiskSvc As PreTradeRiskService
     Set preTradeRiskSvc = New PreTradeRiskService
@@ -97,7 +113,7 @@ Public Sub RunDemo()
             Format(riskReport.maximumAllowedWeight, "0.00%")
 
     '------------------------------------------------------
-    ' 7. Stop the workflow if the order is rejected
+    ' 8. Stop the workflow if the order is rejected
     '------------------------------------------------------
     If Not riskReport.Approved Then
 
@@ -123,7 +139,7 @@ Public Sub RunDemo()
     End If
 
     '------------------------------------------------------
-    ' 8. Approve and execute the real order
+    ' 9. Approve and execute the real order
     '------------------------------------------------------
     ord.Status = ORDER_APPROVED
 
@@ -138,7 +154,7 @@ Public Sub RunDemo()
             " | Execution price = " & execRep.ExecutionPrice
 
     '------------------------------------------------------
-    ' 9. Retrieve the instrument definition
+    ' 10. Retrieve the instrument definition
     '------------------------------------------------------
     Dim instrumentRepo As InstrumentRepository
     Set instrumentRepo = New InstrumentRepository
@@ -147,7 +163,7 @@ Public Sub RunDemo()
     Set currentInstr = instrumentRepo.GetInstrument(ord.InstrumentId)
 
     '------------------------------------------------------
-    ' 10. Calculate the execution impact
+    ' 11. Calculate the execution impact
     '------------------------------------------------------
     Dim impactCalc As ExecutionImpactCalculator
     Set impactCalc = New ExecutionImpactCalculator
@@ -159,7 +175,7 @@ Public Sub RunDemo()
                         currentInstr:=currentInstr)
 
     '------------------------------------------------------
-    ' 11. Apply the execution impact to the portfolio
+    ' 12. Apply the execution impact to the portfolio
     '------------------------------------------------------
     Dim updateSvc As PortfolioUpdateService
     Set updateSvc = New PortfolioUpdateService
@@ -169,7 +185,7 @@ Public Sub RunDemo()
         execImpact:=execImpact
 
     '------------------------------------------------------
-    ' 12. Calculate the final portfolio market value
+    ' 13. Calculate the final portfolio market value
     '------------------------------------------------------
     Dim ptfValSvc As PortfolioValuationService
     Set ptfValSvc = New PortfolioValuationService
@@ -177,15 +193,19 @@ Public Sub RunDemo()
     Dim ptfMarketValue As Double
     ptfMarketValue = _
         ptfValSvc.CalculatePortfolioMarketValue(ptf)
+        
+    Dim ptfMarketValueText As String
+    ptfMarketValueText = _
+        Format$(ptfMarketValue, "0.00")
 
     '------------------------------------------------------
-    ' 13. Retrieve the final position state
+    ' 14. Retrieve the final position state
     '------------------------------------------------------
     Dim finalPos As Position
     Set finalPos = ptf.FindPosition(ord.InstrumentId)
 
     '------------------------------------------------------
-    ' 14. Display the final demonstration result
+    ' 15. Display the final demonstration result
     '------------------------------------------------------
     Debug.Print "=================="
     Debug.Print "DEMO RESULT"
@@ -198,11 +218,11 @@ Public Sub RunDemo()
     Debug.Print "Instrument              : " & ord.InstrumentId
     Debug.Print "Final Quantity          : " & finalPos.Quantity
     Debug.Print "Final Market Price      : " & finalPos.MarketPrice
-    Debug.Print "Portfolio Market Value  : " & ptfMarketValue
+    Debug.Print "Portfolio Market Value  : " & ptfMarketValueText
     Debug.Print "=================="
 
     LogInfo "Final portfolio market value : " & _
-            ptfMarketValue
+            ptfMarketValueText
 
     LogInfo "------- DEMO COMPLETED -------"
 
